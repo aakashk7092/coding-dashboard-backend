@@ -1,23 +1,27 @@
 import express from "express";
-import { fetchGitHubLanguages, fetchGitHubRepos } from "../services/githubService.js";
+import { fetchGitHubRepos, fetchGitHubLanguages } from "../services/githubService.js";
 
 const router = express.Router();
 
-router.get("/languages", async (req, res) => {
-  try {
-    const data = await fetchGitHubLanguages();
-    res.json(data);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
+// 👉 /api/github/repos
 router.get("/repos", async (req, res) => {
   try {
     const data = await fetchGitHubRepos();
     res.json(data);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message || "GitHub repo fetch failed" });
+  }
+});
+
+// 👉 /api/github/languages
+router.get("/languages", async (req, res) => {
+  try {
+    const data = await fetchGitHubLanguages();
+    res.json(data);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message || "GitHub language fetch failed" });
   }
 });
 
