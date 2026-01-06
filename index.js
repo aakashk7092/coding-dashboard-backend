@@ -1,107 +1,28 @@
 import express from "express";
 import cors from "cors";
-import fetch from "node-fetch";
+import dotenv from "dotenv";
+
+
+import leetcodeRoutes from "./src/routes/leetcode.js";
+import githubRoutes from "./src/routes/github.js";
+import profileRoutes from "./src/routes/profiles.js";
+
+
+dotenv.config();
 
 const app = express();
 app.use(cors());
+app.use(express.json());
 
-/* =========================
-   LEETCODE API
-========================= */
-const LEETCODE_USERNAME = "aakashkumar2005";
+app.use("/api/leetcode", leetcodeRoutes);
+app.use("/api/github", githubRoutes);
+app.use("/api/profiles", profileRoutes);
 
-app.get("/api/leetcode", async (req, res) => {
-  try {
-    const response = await fetch(
-      `https://leetcode-stats-api.herokuapp.com/${LEETCODE_USERNAME}`
-    );
-    const data = await response.json();
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: "LeetCode API failed" });
-  }
+app.get("/", (req, res) => {
+  res.send("🚀 Coding Dashboard Backend is running");
 });
 
-/* =========================
-   GITHUB LANGUAGE API (REAL BYTES)
-========================= */
-const GITHUB_USERNAME = "aakashk7092";
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-
-
-app.get("/api/github-languages", async (req, res) => {
-  try {
-    const reposRes = await fetch(
-      `https://api.github.com/users/${GITHUB_USERNAME}/repos?per_page=100`,
-      {
-        headers: {
-          Authorization: `Bearer ${GITHUB_TOKEN}`,
-          "User-Agent": "coding-dashboard",
-        },
-      }
-    );
-
-    const repos = await reposRes.json();
-
-    // ✅ FIX 1: totals define karo
-    const totals = {};
-
-    for (const repo of repos) {
-      if (!repo.languages_url) continue;
-
-      const langRes = await fetch(repo.languages_url, {
-        headers: {
-          Authorization: `Bearer ${GITHUB_TOKEN}`,
-          "User-Agent": "coding-dashboard",
-        },
-      });
-
-      const langs = await langRes.json();
-
-      for (const lang in langs) {
-        // ✅ FIX 2: unwanted languages remove
-        if (!["C++", "Java", "HTML", "CSS"].includes(lang)) continue;
-
-        totals[lang] = (totals[lang] || 0) + langs[lang];
-      }
-    }
-
-    res.json(totals);
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: "GitHub language fetch failed" });
-  }
-});
-/* =========================
-   GITHUB REPOS API
-========================= */
-app.get("/api/github-repos", async (req, res) => {
-  try {
-    const response = await fetch(
-      `https://api.github.com/users/${GITHUB_USERNAME}/repos?sort=updated&per_page=6`,
-      {
-        headers: {
-          Authorization: `Bearer ${GITHUB_TOKEN}`,
-          "User-Agent": "coding-dashboard",
-        },
-      }
-    );
-
-    const data = await response.json();
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: "GitHub repo fetch failed" });
-  }
-});
-
-
-
-/* =========================
-   SERVER
-========================= */
 const PORT = process.env.PORT || 5000;
-
-app.listen(PORT, () => {
-  console.log("✅ Backend running on port", PORT);
-});
-
+app.listen(PORT, () =>
+  console.log(`✅ Server running on http://localhost:${PORT}`)
+);
