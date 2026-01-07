@@ -1,6 +1,6 @@
 import axios from "axios";
 
-// 🔒 hard-coded username (no .env needed)
+// hard-coded username (as you asked)
 const USERNAME = "aakashkumar2005";
 
 export async function fetchLeetCodeStats() {
@@ -38,6 +38,7 @@ export async function fetchLeetCodeStats() {
     if (item.difficulty === "All") solved.total = item.count;
   });
 
+  // ✅ service RETURNS data
   return {
     username: USERNAME,
     solved
