@@ -1,5 +1,6 @@
 import express from "express";
 import { fetchGitHubRepos, fetchGitHubLanguages } from "../services/githubService.js";
+import { getGithubStats } from "../controllers/githubController.js";
 
 const router = express.Router();
 
@@ -24,5 +25,7 @@ router.get("/languages", async (req, res) => {
     res.status(500).json({ error: err.message || "GitHub language fetch failed" });
   }
 });
+
+router.get("/stats/:username", getGithubStats);
 
 export default router;

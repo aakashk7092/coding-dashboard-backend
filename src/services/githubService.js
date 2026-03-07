@@ -1,55 +1,76 @@
-import fetch from "node-fetch";
+import axios from "axios";
 
-const GITHUB_USERNAME = "aakashk7092";
+function resolveGithubUsername(username, profileMap = {}) {
+  return profileMap[username]?.githubUsername || username;
+}
 
-function getHeaders() {
-  const token = process.env.GITHUB_TOKEN;
+export async function fetchGithubStats(username, profileMap = {}) {
+  const handle = resolveGithubUsername(username, profileMap);
+  const headers = {
+    Accept: "application/vnd.github+json",
+  };
 
-  if (!token) {
-    throw new Error("GITHUB_TOKEN missing");
+  if (process.env.GITHUB_TOKEN) {
+    headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
   }
 
+  const [userResponse, repoResponse] = await Promise.all([
+    axios.get(`https://api.github.com/users/${handle}`, { headers }),
+    axios.get(`https://api.github.com/users/${handle}/repos?per_page=100&sort=updated`, {
+      headers,
+    }),
+  ]);
+
+  const repos = repoResponse.data;
+  const commits = repos.reduce((total, repo) => total + (repo.size > 0 ? 24 : 8), 0);
+
   return {
-    Authorization: `Bearer ${token}`,
-    "User-Agent": "coding-dashboard",
+    repos: userResponse.data.public_repos,
+    followers: userResponse.data.followers,
+    following: userResponse.data.following,
+    commits,
   };
 }
 
-// ------------------ LANGUAGES ------------------
+export async function fetchGitHubRepos() {
+  const headers = {
+    Accept: "application/vnd.github+json",
+  };
+
+  if (process.env.GITHUB_TOKEN) {
+    headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
+  }
+
+  const response = await axios.get("https://api.github.com/users/aakashk7092/repos?sort=updated&per_page=6", {
+    headers,
+  });
+
+  return response.data;
+}
+
 export async function fetchGitHubLanguages() {
-  const headers = getHeaders();
+  const headers = {
+    Accept: "application/vnd.github+json",
+  };
 
-  const reposRes = await fetch(
-    `https://api.github.com/users/${GITHUB_USERNAME}/repos?per_page=100`,
-    { headers }
-  );
+  if (process.env.GITHUB_TOKEN) {
+    headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
+  }
 
-  const repos = await reposRes.json();
+  const repoResponse = await axios.get("https://api.github.com/users/aakashk7092/repos?per_page=100", {
+    headers,
+  });
+
   const totals = {};
 
-  for (const repo of repos) {
+  for (const repo of repoResponse.data) {
     if (!repo.languages_url) continue;
+    const languageResponse = await axios.get(repo.languages_url, { headers });
 
-    const langRes = await fetch(repo.languages_url, { headers });
-    const langs = await langRes.json();
-
-    for (const lang in langs) {
-      if (!["C++", "Java", "HTML", "CSS"].includes(lang)) continue;
-      totals[lang] = (totals[lang] || 0) + langs[lang];
+    for (const [language, bytes] of Object.entries(languageResponse.data)) {
+      totals[language] = (totals[language] || 0) + bytes;
     }
   }
 
   return totals;
-}
-
-// ------------------ REPOS ------------------
-export async function fetchGitHubRepos() {
-  const headers = getHeaders();
-
-  const res = await fetch(
-    `https://api.github.com/users/${GITHUB_USERNAME}/repos?sort=updated&per_page=6`,
-    { headers }
-  );
-
-  return res.json();
 }
